@@ -1,0 +1,11 @@
+<page>
+   <item name="LogPanel.scene" props="" ifExport="分离模式" aName=""/>
+   <item name="ChartView.scene" props="" ifExport="分离模式" aName=""/>
+   <item name="DataGridView.scene" props="" ifExport="内嵌模式" aName=""/>
+   <item name="viewpage/MainPage.scene" props="" ifExport="分离模式" aName=""/>
+   <item name="items/MenuBtn.scene" props="" ifExport="内嵌模式" aName=""/>
+   <item name="viewpage/GroupAuditView.scene" props="" ifExport="分离模式" aName=""/>
+   <item name="items/RequestItem.scene" props="" ifExport="内嵌模式" aName=""/>
+   <item name="PopUpDialog.scene" props="" ifExport="分离模式" aName=""/>
+   <item name="viewpage/PicCheckPanel.scene" props="" ifExport="分离模式" aName=""/>
+</page>

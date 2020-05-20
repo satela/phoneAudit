@@ -1,0 +1,692 @@
+(function (mywin) {
+    function USP(){}
+    // 初始化
+    USP.create = function (loginType, payType, closeType, layaSdkUrl){
+        if (document.getElementById("laya_content")) {
+            return false;
+        }
+        var m_this = this;
+        m_this.loginType = loginType;
+        m_this.payType = payType;
+        m_this.closeType = closeType;
+        m_this.layaSdkUrl = layaSdkUrl;
+        if(!m_this.loadCss) {
+            m_this.loadCss =  true;
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = m_this.layaSdkUrl + "css/unifySdkPage.css";
+            document.head.appendChild(link);
+        }
+        // SDKCommon.loadScript(LAYA_UNIFY_SDK.codaJS,function(){});
+        // var codaLink = document.createElement('link');
+        // codaLink.rel = 'stylesheet';
+        // codaLink.href = LAYA_UNIFY_SDK.codaCss;
+        // document.head.appendChild(codaLink);
+
+        m_this.showBlock = null;
+        m_this.phone = "";
+        m_this.code = "";
+        m_this.type = "";
+        m_this.password = "";
+        m_this.errorInf = {1:"系统错误", 2:"参数错误", 3:"请登录", 99:"系统错误",
+            100:"用户名无效", 101:"密码无效", 102:"邮箱无效", 103:"手机号无效", 104:"昵称无效", 107:"ip无效", 108:"用户已存在", 109:"邮箱已存在", 110:"手机号已存在", 111:"用户不存在", 112:"登录类型错误",
+            301:"短信次数已满", 303:"验证码错误", 304:"验证码错误", 306:"短信服务无法连接", 307:"密码不匹配",
+            1101:"不存在的用户", 1102:"未注册邮件", 1103:"帐号和邮箱不匹配", 1104:"旧密码错误", 1105:"帐号已存在", 1106:"帐号或密码错误", 1107:"手机号不存在", 1108:"帐号已存在", 1109:"信息更新失败", 1111:"APPID或APPKEY有误", 1112:"无效的TOKEN", 1201:"未关联sp"};
+        m_this.contentEle = document.createElement("div");
+        m_this.contentEle.id = "laya_content";
+        m_this.contentEle.style.display = "none";
+        document.body.appendChild(m_this.contentEle);
+        // 遮罩
+        var maskStr = "<div id='sdk_laya_mask' class='mask' style='display: none'></div>";
+        // 选择登录方式
+        var chooseTypeStr = "<div style='display: none' class='unify_main unify_iframe choose_type' id='sdk_laya_choose_type'><div class='unify_title clearfix'><h2>选择登录方式</h2>";
+        var loginStr = "<div style='display: none' class='unify_main unify_iframe login_main' id='sdk_laya_login_main'><div class='unify_title clearfix'><h2>登录</h2>";
+        var registerStr = "<div style='display: none' class='unify_main unify_iframe register_main' id='sdk_laya_register_main'><div class='unify_title clearfix'><h2>注册</h2>";
+        var forgetStr = "<div style='display: none' class='unify_main unify_iframe forget_main' id='sdk_laya_forget_main'><div class='unify_title clearfix'><h2>找回密码</h2>";
+        var payStr = "<div style='display: none' class='pay_main unify_iframe' id='sdk_laya_pay_main'></div>";
+        var payWeStr = "<div style='display: none' class='pay_main unify_iframe' id='sdk_laya_pay_we_main'></div>";
+        // 判断是否需要添加关闭按钮
+        if (closeType) {
+            var closeStr = "<span class='close' style='background: url(" + m_this.layaSdkUrl + "images/close_button.png) center center no-repeat;background-size: 50% auto;'></span>";
+            chooseTypeStr += closeStr;
+            loginStr += closeStr;
+            registerStr += closeStr;
+            forgetStr += closeStr;
+        }
+        chooseTypeStr += "</div><div class='unify_content unify_iframe_content choose_content clearfix'><ul class='clearfix'>";
+        // 添加登录方式按钮
+        var loginTypeStr = "";
+        var shortcut = "";
+        for (var i = 0; i < loginType.length; i++) {
+            // 按照
+            switch (loginType[i]) {
+                case "passport" :
+                    loginTypeStr += "<li class='passport' style='background: url(" + m_this.layaSdkUrl + "images/1_15.png) top center no-repeat;background-size: auto 75%;'>手机或用户名登录</li>";
+                    break;
+                case "weChat" :
+                    if(SDKCommon.isPC()){
+                        loginTypeStr += "<li class='weChat' style='background: url(" + m_this.layaSdkUrl + "images/1_07.png) top center no-repeat;background-size: auto 75%;'>微信登录</li>";
+                        shortcut += "<li class='weChat' style='background: url(" + m_this.layaSdkUrl + "images/1_07.png) top center no-repeat;background-size: 100% auto;'>微信登录</li>";
+                    }
+                    break;
+                case "QQ" :
+                    loginTypeStr += "<li class='QQ' style='background: url(" + m_this.layaSdkUrl + "images/1_10.png) top center no-repeat;background-size: auto 75%;'>QQ登录</li>";
+                    shortcut += "<li class='QQ' style='background: url(" + m_this.layaSdkUrl + "images/1_10.png) top center no-repeat;background-size: 100% auto;'>QQ登录</li>";
+                    break;
+                case "sina" :
+                    loginTypeStr += "<li class='sina' style='background: url(" + m_this.layaSdkUrl + "images/1_17.png) top center no-repeat;background-size: auto 75%;'>微博登录</li>";
+                    shortcut += "<li class='sina' style='background: url(" + m_this.layaSdkUrl + "images/1_17.png) top center no-repeat;background-size: 100% auto;'>微博登录</li>";
+                    break;
+                case "google" :
+                    loginTypeStr += "<li class='google' style='background: url(" + m_this.layaSdkUrl + "images/1_08.png) top center no-repeat;background-size: auto 75%;'>google登录</li>";
+                    shortcut += "<li class='google' style='background: url(" + m_this.layaSdkUrl + "images/1_08.png) top center no-repeat;background-size: 100% auto;'>google登录</li>";
+                    break;
+                case "facebook" :
+                    loginTypeStr += "<li class='facebook' style='background: url(" + m_this.layaSdkUrl + "images/1_09.png) top center no-repeat;background-size: auto 75%;'>facebook登录</li>";
+                    shortcut += "<li class='facebook' style='background: url(" + m_this.layaSdkUrl + "images/1_09.png) top center no-repeat;background-size: 100% auto;'>facebook登录</li>";
+                    break;
+                case "bilibili" : 
+                    loginTypeStr += "<li class='bilibili' style='background: url(" + m_this.layaSdkUrl + "images/1_18.png) top center no-repeat;background-size: auto 75%;'>哔哩哔哩登录</li>";
+                    shortcut += "<li class='bilibili' style='background: url(" + m_this.layaSdkUrl + "images/1_18.png) top center no-repeat;background-size: 100% auto;'>哔哩哔哩登录</li>";
+                    break;
+
+            }
+        }
+        chooseTypeStr += loginTypeStr + "</ul></div></div>";
+        // 登录页面
+        loginStr += "</div><div class='unify_content unify_iframe_content login_content clearfix'>"+
+            "<div class='login_form' ><div class='form_group'><input type='text' class='phone login_phone' placeholder='手机号或用户名' name='phone' id='login_phone'></div><div class='form_group'><input type='password' placeholder='账户密码' name='password' id='login_password' class='password'></div>"+
+            "<button type='submit' class='submit'>确认</button></div>"+
+            "<div class='operate clearfix'><span class='register_btn'>注册</span><span class='forget_btn'>忘记密码</span></div>"+
+            "<div class='shortcut_main'><div class='shortcut_tit' style='background: url(" + m_this.layaSdkUrl + "images/line.png) 0 center repeat-x;'><span>快捷登录</span></div><ul class='clearfix'>";
+        loginStr += shortcut + "</ul></div></div></div>";
+        //注册页面
+        registerStr += "</div><div class='unify_content unify_iframe_content register_content clearfix'>"+
+            "<div class='register_form'><div class='form_group'><input type='text' class='phone' placeholder='手机号' name='phone' id='register_phone'></div><div class='serverCode clearfix'><input type='text' placeholder='验证码' name='serverCode' class='serverCode_input' id='register_serverCode'><span class='server_code_btn'>获取验证码</span></div><div class='form_group'><input type='password' placeholder='账户密码' name='password' class='password'></div>"+
+            "<button type='submit' class='submit'>确认</button></div>"+
+            "<div class='operate'><span class='login_btn'>登录</span></div>"+
+            "<div class='shortcut_main'><div class='shortcut_tit' style='background: url(" + m_this.layaSdkUrl + "images/line.png) 0 center repeat-x;'><span>快捷登录</span></div><ul class='clearfix'>";
+        registerStr += shortcut + "</ul></div></div></div>";
+        // 忘记密码
+        forgetStr += "</div><div class='unify_content unify_iframe_content forget_content clearfix'>"+
+            "<div class='forget_form'><div class='form_group'><input type='text' class='phone' placeholder='手机号' name='phone' id='forget_phone'></div><div class='serverCode clearfix'><input type='text' placeholder='验证码' name='serverCode' class='serverCode_input' id='forget_serverCode'><span class='server_code_btn'>获取验证码</span></div><div class='form_group'><input type='password' placeholder='重置密码' name='password' class='password'></div>"+
+            "<div class='form_action clearfix'><button type='submit' class='submit'>提交</button><button type='button' class='go_back' id='go_back'>返回</button></div></div></div></div>";
+        // 支付页面
+        m_this.contentEle.innerHTML = maskStr + chooseTypeStr + loginStr + registerStr + forgetStr + payStr + payWeStr;
+
+        m_this.maskDiv = document.getElementById("sdk_laya_mask");
+        m_this.chooseDiv = document.getElementById("sdk_laya_choose_type");
+        m_this.loginDiv = document.getElementById("sdk_laya_login_main");
+        m_this.registerDiv = document.getElementById("sdk_laya_register_main");
+        m_this.forgetDiv = document.getElementById("sdk_laya_forget_main");
+        m_this.payDiv = document.getElementById("sdk_laya_pay_main");
+        m_this.payWeDiv = document.getElementById("sdk_laya_pay_we_main");
+
+        var passportBtn = m_this.chooseDiv.getElementsByClassName("passport")[0];
+        var registerBtn = m_this.loginDiv.getElementsByClassName("register_btn")[0];
+        var forgetBtn = m_this.loginDiv.getElementsByClassName("forget_btn")[0];
+        var loginBtn = m_this.registerDiv.getElementsByClassName("login_btn")[0];
+        var goBackBtn = document.getElementById("go_back");
+        var serverCodeBtn = document.getElementsByClassName("server_code_btn");
+        var closeBtns = document.getElementsByClassName("close");
+
+        // 获取验证码
+        for(i = 0; i < serverCodeBtn.length; i++) {
+            serverCodeBtn[i].onclick = function() {
+                var btn_this = this;
+                layaremoveError();
+                if(!layahasClass(this, "waiting"))  {
+                    var phoneDiv = this.parentNode.previousSibling;
+                    m_this.phone = phoneDiv.firstChild.value;
+                    var formDiv = this.parentNode.parentNode;
+                    if(layahasClass(formDiv, "register_form")) {
+                        var check = ["111","1101"];
+                    }
+                    if(layahasClass(formDiv, "forget_form")) {
+                        var check = ["108", "110", "1105", "1108"];
+                    }
+                    if(m_this.phone && m_this.phone.match(/^1[0-9]{10}$/)){
+                        if(phoneDiv.firstChild.getAttribute("data-ret")!=undefined && phoneDiv.firstChild.getAttribute("data-ret")!=""&&check.indexOf(phoneDiv.firstChild.getAttribute("data-ret")) < 0) {
+                            layaaddErrorElement(phoneDiv, m_this.errorInf[phoneDiv.firstChild.getAttribute("data-ret")]);
+                        } else {
+                            LAYA_UNIFY_SDK&&LAYA_UNIFY_SDK.serverCode(m_this.phone);
+                            layaaddClass(btn_this, "waiting");
+                            var num = 120;
+                            this.innerHTML = num + "s";
+                            m_this.timer = setInterval(function () {
+                                num--;
+                                btn_this.innerHTML = num + "s";
+                                if(!num) {
+                                    layaClearCheckCode()
+                                }
+                            }, 1000);
+                        }
+                    } else {
+                        layaaddErrorElement(phoneDiv, "手机号码格式错误");
+                    }
+                }
+            }
+        }
+        // 点击关闭按钮
+        if(closeBtns) {
+            for(i = 0; i < closeBtns.length; i++) {
+                closeBtns[i].onclick = function (){
+                    USP.layaClosePage();
+                }
+            }
+        }
+
+        // 选择通过手机号码登录
+        if(passportBtn){
+            passportBtn.onclick = function () {
+                m_this.chooseDiv.style.display = "none";
+                m_this.loginDiv.style.display = "block";
+                layaDivMiddle(m_this.loginDiv);
+            };
+        }
+        // 点击注册按钮切换弹窗
+        if(registerBtn) {
+            registerBtn.onclick = function() {
+                m_this.loginDiv.style.display = "none";
+                m_this.registerDiv.style.display = "block";
+                layaDivMiddle(m_this.registerDiv);
+                layaclearInputValue();
+            };
+        }
+        // 点击忘记密码按钮切换弹窗
+        if(forgetBtn) {
+            forgetBtn.onclick = function() {
+                m_this.loginDiv.style.display = "none";
+                m_this.forgetDiv.style.display = "block";
+                layaDivMiddle(m_this.forgetDiv);
+                layaclearInputValue();
+                layaClearCheckCode();
+            };
+        }
+        // 点击登录按钮切换页面
+        if(loginBtn) {
+            loginBtn.onclick = function() {
+                m_this.registerDiv.style.display = "none";
+                m_this.loginDiv.style.display = "block";
+                layaDivMiddle(m_this.loginDiv);
+                layaclearInputValue();
+                layaClearCheckCode()
+            };
+        }
+        // 点击返回按钮切换到登录页面上
+        if(goBackBtn) {
+            goBackBtn.onclick = function(){
+                m_this.forgetDiv.style.display = "none";
+                m_this.loginDiv.style.display = "block";
+                layaDivMiddle(m_this.loginDiv);
+                layaclearInputValue();
+                layaClearCheckCode()
+            };
+        }
+        // 手机号码验证
+        var phones = document.getElementsByClassName("phone");
+        for(i = 0; i < phones.length; i++) {
+            phones[i].onkeyup = phoneCheck;
+            phones[i].onblur = phoneCheck;
+        }
+        function phoneCheck () {
+
+            var phone_this = this;
+            layahasClass(phone_this.parentNode.nextSibling, "unifySdk_laya_error") && layaremoveElement(phone_this.parentNode.nextSibling);
+            var phoneVal = phone_this.value;
+            if (layahasClass(phone_this, "login_phone") && phoneVal.match(/^[\_\da-zA-Z]{5,20}$/)) {
+                phone_this.setAttribute("data-ret", "");
+                phone_this.setAttribute("data-type", 1);
+            }
+            if (phoneVal.length == 11 && phoneVal.match(/^1[0-9]{10}$/)) {
+                var formDiv = phone_this.parentNode.parentNode;
+                if (formDiv.className == "login_form") {
+                    phone_this.setAttribute("data-type", 3);
+                }
+                LAYA_UNIFY_SDK && LAYA_UNIFY_SDK.existUser({username: phoneVal, userType: 3}, function (data) {
+                    phone_this.setAttribute("data-ret", data.ret);
+
+                    switch (formDiv.className) {
+                        case "register_form":
+                            if ([111, 1101].indexOf(data.ret) < 0) {
+                                layaaddErrorElement(phone_this.parentNode, m_this.errorInf[data.ret] || data.msg);
+                                if (!m_this.errorInf[data.ret]) {
+                                    m_this.errorInf[data.ret] = data.msg;
+                                }
+                            }
+                            break;
+                        case "login_form":
+                            if ([110, 108, 1105, 1108].indexOf(data.ret) < 0) {
+                                phone_this.setAttribute("data-type", 1)
+                            } else {
+                                phone_this.setAttribute("data-type", 3);
+                            }
+                            break;
+                        case "forget_form":
+                            if ([110, 108, 1105, 1108].indexOf(data.ret) < 0) {
+                                layaaddErrorElement(phone_this.parentNode, m_this.errorInf[data.ret] || data.msg);
+                                if (!m_this.errorInf[data.ret]) {
+                                    m_this.errorInf[data.ret] = data.msg;
+                                }
+                            }
+                            break;
+                    }
+                });
+            }
+        }
+    };
+    function layaClearCheckCode() {
+        var serverCodeBtn = document.getElementsByClassName("server_code_btn");
+        clearInterval(USP.timer);
+        for(var i = 0; i < serverCodeBtn.length;i++) {
+            layaremoveClass(serverCodeBtn[i], "waiting");
+            serverCodeBtn[i].innerHTML = "获取验证码";
+        }
+    }
+    // 支付
+    USP.pay = function (param, callback) {
+        var m_this = this;
+        m_this.unifyCallback = callback;
+        m_this.contentEle.style.display = "block";
+        m_this.maskDiv.style.display = "block";
+        m_this.payDiv.style.display = "block";
+
+        // 支付页面
+        var payStr = "<div class='pay_title unify_title clearfix'><h2>支付平台</h2><span class='pay_close' style='background: url(" + m_this.layaSdkUrl + "images/pay_close.png) center center no-repeat;background-size: 50% auto;'></span></div><div class='pay_content unify_iframe_content clearfix'><div class='pay_info'><ul class='pay_info_con'>" +
+            "<li class='clearfix'><span>商户名称</span><em>" + param.gameName +  "</em></li><li class='clearfix'><span>商品名称</span><em>" + param.goodsName + "</em></li><li class='clearfix'><span>支付金额</span><em>" + (param.amount/100) + "元</em></li></ul></div><div class='pay_list_tit'>选择支付方式</div><div class='pay_list'>";
+
+        for(var i = 0; i < m_this.payType.length; i++) {
+            switch (m_this.payType[i]) {
+                case "weChat":
+                    if (SDKCommon.isWeChat()) {
+                        payStr += "<dl class='weChat' style='background: #ffffff url(" + m_this.layaSdkUrl + "images/triangle.jpg) right center no-repeat;background-size: auto 100%;'><dt><img src='" + m_this.layaSdkUrl + "images/weChat_pay.jpg' alt='微信支付'></dt><dd><h3>微信支付</h3><p>使用微信进行支付</p></dd></dl>";
+                    } else if(SDKCommon.isPC()) {
+                        payStr += "<dl class='weChatCode' style='background: #ffffff url(" + m_this.layaSdkUrl + "images/triangle.jpg) right center no-repeat;background-size: auto 100%;'><dt><img src='" + m_this.layaSdkUrl + "images/weChat_pay.jpg' alt='微信扫码支付'></dt><dd><h3>微信扫码支付</h3><p>使用微信扫码进行支付</p></dd></dl>";
+                    }
+                    break;
+                case "Ali":
+                    if(!SDKCommon.isWeChat()) {
+                        payStr += "<dl class='Ali' style='background: #ffffff url(" + m_this.layaSdkUrl + "images/triangle.jpg) right center no-repeat;background-size: auto 100%;'><dt><img src='" + m_this.layaSdkUrl + "images/ali_pay.jpg' alt='支付宝'></dt><dd><h3>支付宝</h3><p>使用支付宝进行支付</p></dd></dl>";
+                    }
+                    break;
+                case "Du":
+                    payStr += "<dl class='Du' style='background: #ffffff url(" + m_this.layaSdkUrl + "images/triangle.jpg) right center no-repeat;background-size: auto 100%;'><dt><img src='" + m_this.layaSdkUrl + "images/du_pay.jpg' alt='百度钱包'></dt><dd><h3>百度钱包</h3><p>使用百度钱包进行支付</p></dd></dl>";
+                    break;
+                case "QQ":
+                    payStr += "<dl class='QQ' style='background: #ffffff url(" + m_this.layaSdkUrl + "images/triangle.jpg) right center no-repeat;background-size: auto 100%;'><dt><img src='" + m_this.layaSdkUrl + "images/QQ_pay.jpg' alt='QQ钱包'></dt><dd><h3>QQ钱包</h3><p>使用QQ钱包进行支付</p></dd></dl>";
+                    break;
+                case "coda":
+                    payStr += "<dl class='Coda' style='background: #ffffff url(" + m_this.layaSdkUrl + "images/triangle.jpg) right center no-repeat;background-size: auto 100%;'><dt><img src='" + m_this.layaSdkUrl + "images/QQ_pay.jpg' alt='QQ钱包'></dt><dd><h3>QQ钱包</h3><p>使用coda进行支付</p></dd></dl>";
+                    break;
+            }
+        }
+        m_this.payDiv.innerHTML = payStr + "</div></div>";
+        m_this.payDiv && LayaInitPayDiv(m_this.payDiv);
+        var payCloseBtn = m_this.payDiv.getElementsByClassName("pay_close")[0];
+        payCloseBtn.onclick = function () {
+            USP.layaClosePage();
+        };
+        var dls = m_this.payDiv.getElementsByTagName("dl");
+        for(i = 0; i < dls.length; i++) {
+            dls[i].onclick = function () {
+                m_this.unifyCallback &&  m_this.unifyCallback({"type" : this.className});
+            }
+        }
+        layaDivMiddle(m_this.payDiv);
+    };
+    // 支付弹窗大小调整
+    function LayaInitPayDiv(obj) {
+        if (obj) {
+            var payListImgs = obj.getElementsByTagName("dt");
+            var payListTits = obj.getElementsByTagName("h3");
+            var payListPs = obj.getElementsByTagName("p");
+
+            var payListWidth = parseFloat(layagetStyle(obj, "width"));
+            if(payListImgs.length) {
+
+                for(i = 0; i < payListImgs.length; i++) {
+                    payListImgs[i].style.height = payListWidth * 0.096 + "px";
+                    payListTits[i].style.fontSize = payListWidth * 0.043 + "px";
+                    payListPs[i].style.fontSize = payListWidth * 0.037 + "px";
+                }
+            }
+            var payContentDiv = obj.getElementsByClassName("pay_content")[0];
+            obj.style.height = parseFloat(layagetStyle(payContentDiv, "height")) + 70 + "px";
+        }
+    }
+    // 登录
+    USP.login = function(callback) {
+        var m_this = this;
+        m_this.unifyCallback = callback;
+        m_this.contentEle.style.display = "block";
+        m_this.maskDiv.style.display = "block";
+        m_this.chooseDiv.style.display = "block";
+        layaDivMiddle(m_this.chooseDiv);
+        var submitBtn = document.getElementsByClassName("submit");
+        var weChatBtn = document.getElementsByClassName("weChat");
+        var sinaBtn = document.getElementsByClassName("sina");
+        var qqBtn = document.getElementsByClassName("QQ");
+        var googleBtn = document.getElementsByClassName("google");
+        var facebookBtn = document.getElementsByClassName("facebook");
+        var bilibiliBtn = document.getElementsByClassName("bilibili");
+
+        for(var i = 0; i < weChatBtn.length; i++) {
+            weChatBtn[i].onclick = function() {
+                m_this.unifyCallback && m_this.unifyCallback({phone:"",code:"",type:"weChat",password:""});
+            }
+        }
+        for(i = 0; i < sinaBtn.length; i++) {
+            sinaBtn[i].onclick = function() {
+                m_this.unifyCallback && m_this.unifyCallback({phone:"",code:"",type:"sina",password:""});
+            }
+        }
+        for(i = 0; i < qqBtn.length; i++) {
+            qqBtn[i].onclick = function() {
+                m_this.unifyCallback && m_this.unifyCallback({phone:"",code:"",type:"QQ",password:""});
+            }
+        }
+        for(i = 0; i < googleBtn.length; i++) {
+            googleBtn[i].onclick = function() {
+                m_this.unifyCallback && m_this.unifyCallback({phone:"",code:"",type:"google",password:""});
+            }
+        }
+        for(i = 0; i < facebookBtn.length; i++) {
+            facebookBtn[i].onclick = function() {
+                m_this.unifyCallback && m_this.unifyCallback({phone:"",code:"",type:"facebook",password:""});
+            }
+        }
+        for(i = 0; i < bilibiliBtn.length; i++) {
+            bilibiliBtn[i].onclick = function() {
+                m_this.unifyCallback && m_this.unifyCallback({phone:"",code:"",type:"bilibili",password:""});
+            }
+        }
+        
+
+        for(i = 0; i < submitBtn.length; i++) {
+            submitBtn[i].onclick = function() {
+                var btn_this = this;
+                if(!layahasClass(btn_this, "posting")) {
+                    layaaddClass(btn_this, "posting");
+                }
+                layaremoveError();
+
+                var formDiv = this.parentNode;
+                if(layahasClass(formDiv, "form_action")) {
+                    formDiv = formDiv.parentNode;
+                }
+                var phoneIpt = formDiv.getElementsByClassName("phone")[0];
+                var errors = document.getElementsByClassName("unifySdk_laya_error");
+                var formData = layagetFormData(formDiv);
+                var callbackData = {
+                    "phone": formData.phone,
+                    "code": formData.serverCode,
+                    "password": formData.password
+                };
+
+                switch (formDiv.className) {
+                    case "register_form":
+                        if(formDiv.getElementsByClassName("phone")[0] && layahasClass(formDiv.getElementsByClassName("phone")[0],"login_phone") && !callbackData.phone.match(/^[\_\da-zA-Z]{5,20}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("phone")[0].parentNode, "账号格式错误");
+                        } else if(formDiv.getElementsByClassName("phone")[0] && !layahasClass(formDiv.getElementsByClassName("phone")[0],"login_phone") && !callbackData.phone.match(/^1[0-9]{10}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("phone")[0].parentNode, "手机号码格式错误");
+                        }
+                        if(phoneIpt.getAttribute("data-ret")!= undefined && phoneIpt.getAttribute("data-ret")!= "" && ["111","1101"].indexOf(phoneIpt.getAttribute("data-ret")) < 0){
+                            layaaddErrorElement(formDiv.firstChild, m_this.errorInf[phoneIpt.getAttribute("data-ret")]);
+                        }
+                        if(formDiv.getElementsByClassName("password")[0] && !callbackData.password.match(/^[0-9a-zA-Z]{6,30}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("password")[0].parentNode, "密码格式为6~30位数字或字母");
+                        }
+                        break;
+                    case "login_form":
+                        if(formDiv.getElementsByClassName("phone")[0] && layahasClass(formDiv.getElementsByClassName("phone")[0],"login_phone") && !callbackData.phone.match(/^[\_\da-zA-Z]{3,20}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("phone")[0].parentNode, "账号格式错误");
+                        } else if(formDiv.getElementsByClassName("phone")[0] && !layahasClass(formDiv.getElementsByClassName("phone")[0],"login_phone") && !callbackData.phone.match(/^1[0-9]{10}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("phone")[0].parentNode, "手机号码格式错误");
+                        }
+
+                        // if(formDiv.getElementsByClassName("password")[0] && !callbackData.password.match(/^[0-9a-zA-Z]{3,30}$/)) {
+                        //     layaaddErrorElement(formDiv.getElementsByClassName("password")[0].parentNode, "密码格式为6~30位数字或字母");
+                        // }
+                        if(phoneIpt.getAttribute("data-ret")!= undefined &&phoneIpt.getAttribute("data-ret")!= "" && ["110", "108", "1105", "1108"].indexOf(phoneIpt.getAttribute("data-ret")) < 0){
+                            layaaddErrorElement(formDiv.firstChild, m_this.errorInf[phoneIpt.getAttribute("data-ret")]);
+                        }
+                        break;
+                    case "forget_form":
+                        if(formDiv.getElementsByClassName("phone")[0] && layahasClass(formDiv.getElementsByClassName("phone")[0],"login_phone") && !callbackData.phone.match(/^[\_\da-zA-Z]{5,20}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("phone")[0].parentNode, "账号格式错误");
+                        } else if(formDiv.getElementsByClassName("phone")[0] && !layahasClass(formDiv.getElementsByClassName("phone")[0],"login_phone") && !callbackData.phone.match(/^1[0-9]{10}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("phone")[0].parentNode, "手机号码格式错误");
+                        }
+                        if(phoneIpt.getAttribute("data-ret")!= undefined &&phoneIpt.getAttribute("data-ret")!= "" && ["110", "108", "1105", "1108"].indexOf(phoneIpt.getAttribute("data-ret")) < 0){
+                            layaaddErrorElement(formDiv.firstChild, m_this.errorInf[phoneIpt.getAttribute("data-ret")]);
+                        }
+                        if(formDiv.getElementsByClassName("password")[0] && !callbackData.password.match(/^[0-9a-zA-Z]{6,30}$/)) {
+                            layaaddErrorElement(formDiv.getElementsByClassName("password")[0].parentNode, "密码格式为6~30位数字或字母");
+                        }
+                        break;
+                }
+
+                if(formDiv.getElementsByClassName("serverCode")[0] && !callbackData.code.match(/^\d{4}$/)) {
+                    layaaddErrorElement(formDiv.getElementsByClassName("serverCode")[0], "验证码格式错误");
+                }
+
+                if(errors.length) {
+                    layaremoveClass(btn_this, "posting");
+                } else {
+                    switch(formDiv.className) {
+                        case "register_form":
+                            callbackData.type = "register";
+                            layaremoveClass(btn_this, "posting");
+                            LAYA_UNIFY_SDK&&LAYA_UNIFY_SDK.loginRegister(callbackData, function(data){
+
+                                if(data.ret == 303 || data.ret == 304) {
+                                    layaaddErrorElement(formDiv.getElementsByClassName("serverCode")[0], m_this.errorInf[data.ret]||data.msg);
+                                    if(!m_this.errorInf[data.ret]) {
+                                        m_this.errorInf[data.ret] = data.msg;
+                                    }
+                                } else {
+                                    if(data.ret&&!m_this.errorInf[data.ret]) {
+                                        m_this.errorInf[data.ret] = data.msg;
+                                    }
+                                }
+                            });
+                            break;
+                        case "login_form":
+                            callbackData.type = "passport";
+                            callbackData.loginType = phoneIpt.getAttribute("data-type") || 1;
+                            layaremoveClass(btn_this, "posting");
+                            LAYA_UNIFY_SDK&&LAYA_UNIFY_SDK.loginPassport(callbackData, function(data){
+                                data.ret && layaaddErrorElement(formDiv.firstChild, m_this.errorInf[data.ret]||data.msg);
+                                if(data.ret&&!m_this.errorInf[data.ret]) {
+                                    m_this.errorInf[data.ret] = data.msg;
+                                }
+                            });
+                            break;
+                        case "forget_form":
+                            callbackData.type = "ChangePWD";
+                            layaremoveClass(btn_this, "posting");
+                            LAYA_UNIFY_SDK&&LAYA_UNIFY_SDK.loginChangePWD(callbackData, function(data){
+
+                                if (data.ret) {
+                                    if(data.ret == 303 || data.ret == 304) {
+                                        layaaddErrorElement(formDiv.getElementsByClassName("serverCode")[0], m_this.errorInf[data.ret]||data.msg);
+                                        if(!m_this.errorInf[data.ret]) {
+                                            m_this.errorInf[data.ret] = data.msg;
+                                        }
+                                    } else {
+                                        layaaddErrorElement(formDiv.firstChild, m_this.errorInf[data.ret]||data.msg);
+                                        if(data.ret&&!m_this.errorInf[data.ret]) {
+                                            m_this.errorInf[data.ret] = data.msg;
+                                        }
+                                    }
+                                } else {
+                                    m_this.forgetDiv.style.display = "none";
+                                    m_this.loginDiv.style.display = "block";
+                                    layaDivMiddle(m_this.loginDiv);
+                                    layaclearInputValue();
+                                    layaClearCheckCode();
+                                    var loginIpt = document.getElementById("login_phone");
+                                    loginIpt.value = callbackData.phone;
+                                    loginIpt.setAttribute("data-type",3);
+                                    loginIpt.setAttribute("data-ret","");
+                                }
+                            });
+                            break;
+                    }
+                }
+            }
+        }
+    };
+    // 创建iframe
+    USP.createIframe = function (url) {
+        var unifyMains = document.getElementsByClassName("unify_iframe");
+        for(var i = 0; i < unifyMains.length; i++) {
+            if(layagetStyle(unifyMains[i], "display") == "block") {
+                break;
+            }
+        }
+        if(i != unifyMains.length) {
+            var pElement = unifyMains[i].getElementsByClassName("unify_iframe_content")[0];
+            var newIframe = document.createElement("iframe");
+            newIframe.src=url;
+            newIframe.name="LayaStoreSDK"+Date.now();
+            newIframe.id="LayaStoreSDK"+Date.now();
+            newIframe.sandbox="allow-scripts allow-top-navigation allow-same-origin allow-forms";
+            unifyMains[i].style.height = "456px";
+            unifyMains[i].removeChild(pElement);
+            unifyMains[i].appendChild(newIframe);
+            // newIframe.onload = function() {
+            //     window.location.href = url;
+            // }
+            USP.showBlock&&layaDivMiddle(USP.showBlock);
+            newIframe.style.height = unifyMains[i].clientHeight-unifyMains[i].getElementsByClassName("unify_title")[0].offsetHeight - 20 + "px";
+            USP.payDiv && LayaInitPayDiv(USP.payDiv);
+        }
+    };
+    // 关闭
+    USP.close = function() {
+        var m_this = this;
+        document.body.removeChild(m_this.contentEle);
+        clearInterval(this.timer);
+        m_this.create(m_this.loginType, m_this.payType, m_this.closeType, m_this.layaSdkUrl);
+    };
+    // 微信扫码
+    USP.weChatCodeShow = function(url) {
+        var m_this = this;
+        m_this.payDiv.style.display = "none";
+        m_this.payWeDiv.style.display = "block";
+        var payStr = "<div class='pay_title unify_title clearfix'><h2>支付平台</h2><span class='pay_close' style='background: url(" + m_this.layaSdkUrl + "images/pay_close.png) center center no-repeat;background-size: 50% auto;'></span></div><div class='pay_content unify_iframe_content clearfix'><div class='we_img'><img src='" + m_this.layaSdkUrl + "images/WePayLogo.png' alt='微信支付'></div>"+
+            "<div class='we_content clearfix'><div class='we_left'><img src='" + url + "' alt='微信支付二维码' class='scanning'><img src='" + m_this.layaSdkUrl + "images/shuoming.png' alt='请使用微信扫描' class='font'></div><div class='we_right'><img src='" + m_this.layaSdkUrl + "images/phone_bg.png' alt='扫一扫提示'></div></div></div>";
+        m_this.payWeDiv.innerHTML = payStr;
+        layaDivMiddle(m_this.payWeDiv);
+        var payWeCloseBtn = m_this.payWeDiv.getElementsByClassName("pay_close")[0];
+        if(payWeCloseBtn) {
+            payWeCloseBtn.onclick = function() {
+                USP.layaClosePage();
+            }
+        }
+    };
+    USP.layaClosePage = function(){
+        var m_this = this;
+        USP.close();
+        m_this.unifyCallback && m_this.unifyCallback({type:"close"});
+    }
+    // 获取标签样式
+    function layagetStyle(dom, prop){
+        dom = ('string'== typeof dom)?document.getElementById(dom):dom;
+        if(!dom){
+            return null;
+        }
+        prop = prop.replace(/([A-Z])/g,"-$1");
+        prop = prop.toLowerCase();
+        if(dom.currentStyle){
+            return dom.currentStyle[prop];
+        } else if(window.getComputedStyle){
+            return window.getComputedStyle(dom,null)[prop];
+        } else if(document.defaultView.getComputedStyle){
+            return document.defaultView.getComputedStyle(dom,null)[prop];
+        } else {
+            return null;
+        }
+    }
+    // 清除input的内容
+    function layaclearInputValue() {
+        var inputs = document.getElementsByTagName("input");
+        for(var i = 0; i < inputs.length; i++) {
+            inputs[i].value = "";
+        }
+        layaremoveError();
+    }
+    // 移除错误信息
+    function layaremoveError(){
+        var errors = document.getElementsByClassName("unifySdk_laya_error");
+        for (var j  = errors.length - 1; j >= 0 ; j--) {
+            layaremoveElement(errors[j]);
+        }
+    }
+    // 添加节点
+    function layaaddErrorElement(obj, content) {
+        if(obj) {
+            var errorDiv = document.createElement("p");
+            errorDiv.className = "unifySdk_laya_error";
+            errorDiv.innerHTML = content;
+            obj.parentNode.insertBefore(errorDiv, obj.nextSibling);
+        }
+    }
+    // 删除节点
+    function layaremoveElement(obj){
+        obj&&obj.parentNode&&obj.parentNode.removeChild(obj);
+    }
+    // 判断类名是否存在
+    function layahasClass(obj, cls) {
+        return obj.className.match(new RegExp('(\\s|^)' + cls + '(\\s|$)'));
+    }
+    // 添加类名
+    function layaaddClass(obj, cls) {
+        if (!layahasClass(obj, cls)) obj.className += " " + cls;
+    }
+    // 移除类名
+    function layaremoveClass(obj, cls) {
+        if (layahasClass(obj, cls)) {
+            var reg = new RegExp('(\\s|^)' + cls + '(\\s|$)');
+            obj.className = obj.className.replace(reg, ' ');
+        }
+    }
+    // 获取表单数据内容
+    function layagetFormData(formDiv) {
+        var data = {};
+        var inputs = formDiv.getElementsByTagName("input");
+        for(var i = 0; i < inputs.length; i++) {
+            data[inputs[i].getAttribute("name")] = inputs[i].value;
+        }
+        return data;
+    }
+    // 弹窗屏幕自适应
+    function layaDivMiddle(obj) {
+        if(obj) {
+            USP.showBlock = obj;
+            var windowHeight = document.getElementById("sdk_laya_mask").offsetHeight;
+            var contentHeight = obj.getElementsByClassName("unify_iframe_content")[0]?(obj.getElementsByClassName("unify_iframe_content")[0].offsetHeight + obj.getElementsByClassName("unify_title")[0].offsetHeight):obj.offsetHeight;
+            var height = 0;
+            if (windowHeight > (contentHeight)) {
+                height = contentHeight - 20;
+                layaaddClass(obj, "middle");
+            } else {
+                height = windowHeight - 30;
+                // obj.style.height = windowHeight - 30 + "px";
+                // var payIframe = obj.getElementsByTagName("iframe")[0];
+                // payIframe&&(payIframe.style.height = windowHeight - 80 + "px");
+                layaremoveClass(obj, "middle");
+            }
+
+            obj.style.height = height + "px";
+            var payIframe = obj.getElementsByTagName("iframe")[0];
+            payIframe&&(payIframe.style.height = height - 51 + "px");
+        }
+    }
+    mywin.addEventListener("resize", function(){
+        USP.showBlock&&layaDivMiddle(USP.showBlock);
+        (USP.showBlock == USP.payDiv)&& USP.payDiv &&LayaInitPayDiv(USP.payDiv);
+    })
+    mywin.unifySdkPage = USP;
+})(window);
